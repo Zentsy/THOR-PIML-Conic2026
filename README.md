@@ -1,13 +1,13 @@
 # THOR-PIML: Physics-Informed Neural Downscaling for Regional Climate Extremes
 
-[![Conference](https://img.shields.io/badge/CONIC%20%2F%20SEMCITEC-2026-blue.svg)](https://github.com/Zentsy/THOR-PIML-Conic2026)
+[![Conference](https://img.shields.io/badge/CONIC%20%2F%-2026-blue.svg)](https://github.com/Zentsy/THOR-PIML-Conic2026)
 [![License](https://img.shields.io/badge/License-Restricted%20Academic-red.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-brightgreen.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.4.0-ee4c2c.svg)](https://pytorch.org/)
 
 > **Repositório Oficial do Artigo:**  
 > *"Downscaling Estatístico-Dinâmico de Precipitação Diária via Redes Neurais Híbridas Informadas pela Física (THOR-PIML)"*  
-> Submetido ao **CONIC / SEMCITEC 2026**.
+> Submetido ao **CONIC 2026**.
 
 ---
 
