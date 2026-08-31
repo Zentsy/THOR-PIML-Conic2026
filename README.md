@@ -1,6 +1,6 @@
 # THOR-PIML: Arquitetura Neural Híbrida com Física Informada para Modelagem e Downscaling Estatístico de Precipitação em Bacias Hidrográficas Regionais
 
-[![Conference](https://img.shields.io/badge/CONIC%20%2F%20SEMCITEC-2026-blue.svg)](https://github.com/Zentsy/THOR-PIML-Conic2026)
+[![Conference](https://img.shields.io/badge/CONIC-2026-blue.svg)](https://github.com/Zentsy/THOR-PIML-Conic2026)
 [![License](https://img.shields.io/badge/License-Restricted%20Academic-red.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-brightgreen.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.4.0-ee4c2c.svg)](https://pytorch.org/)
@@ -8,7 +8,7 @@
 > **Repositório Oficial do Artigo:**  
 > *"THOR-PIML: Arquitetura Neural Híbrida com Física Informada para Modelagem e Downscaling Estatístico de Precipitação em Bacias Hidrográficas Regionais"*  
 > **THOR-PIML:** *Taylor-Hurdle Optimized Regional Physics-Informed Machine Learning*  
-> Submetido ao **CONIC / SEMCITEC 2026**.
+> Submetido ao **CONIC 2026**.
 
 ---
 

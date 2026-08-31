@@ -503,7 +503,7 @@ def generate_benchmark_html(all_results: dict) -> str:
       • <b>THOR-V7 Híbrido (LSTM + TCN Gated Fusion):</b> Nossa proposta de fusão temporal informada por física.<br>
       • <b>THOR-V8 Espacial (CNN 2D + Hybrid + PIML Master):</b> Nossa proposta master com acoplamento sinótico 2D e garantia física de Clausius-Clapeyron (0.00% de violação).
     </div>
-    <div style="text-align: right;">THOR-PIML • Projeto CONIC/SEMCITEC 2026<br><small>Relatório gerado por <code>benchmarks/run_benchmarks.py</code></small></div>
+    <div style="text-align: right;">THOR-PIML • Projeto CONIC/CONIC 2026<br><small>Relatório gerado por <code>benchmarks/run_benchmarks.py</code></small></div>
   </footer>
 </div>
 </body>

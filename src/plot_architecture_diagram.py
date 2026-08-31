@@ -18,7 +18,7 @@ if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 OUT_DIRS = [
-    Path(r"C:\Users\levib\Desktop\SEMCITEC26\CONIC\THOR\THOR-PIML\results\figures"),
+    Path(r"C:\Users\levib\Desktop\CONIC\THOR\THOR-PIML\results\figures"),
     Path(r"C:\Users\levib\.gemini\antigravity\worktrees\THOR-PIML\debug_mars_runtime_error\results\figures")
 ]
 for od in OUT_DIRS:
