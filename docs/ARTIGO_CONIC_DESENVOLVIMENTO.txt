@@ -1,0 +1,17 @@
+5. Desenvolvimento
+
+5.1 Restrições Termodinâmicas de Clausius-Clapeyron
+
+A pressão de saturação de vapor de água na atmosfera varia com a temperatura do ar segundo a formulação de Magnus-Tetens, delimitando a capacidade teórica máxima de umidade do ar antes do processo de condensação:
+
+$$e_s(T) = 6{,}1078 \cdot \exp\left(\frac{17{,}269 \cdot T}{237{,}3 + T}\right) \tag{1}$$
+
+Para evitar que a rede neural gere volumes de precipitação que violem as leis de conservação de massa sob cenários de aquecimento, aplica-se uma barreira termodinâmica diferenciável regulada pela coluna total de vapor de água (TCWV):
+
+$$\mathcal{L}_{\text{phys}} = \lambda_{\text{phys}} \cdot \left[\text{Softplus}\left(\frac{\hat{y} - 4{,}0 \cdot TCWV}{\delta}\right)\right]^2 \tag{2}$$
+
+5.2 Modelagem de Extremos e Função de Perda Composta
+
+Para superar o viés de garoa provocado pela aversão matemática ao risco das funções simétricas convencionais, a rede desacopla a probabilidade de ocorrência da intensidade da chuva por meio de uma estrutura Hurdle, sendo otimizada por uma função de perda multiobjetivo com penalização ponderada para tempestades e alinhamento de variância:
+
+$$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{occ}} + \mathcal{L}_{\text{int}} + \lambda_{\text{var}}\mathcal{L}_{\text{var}} + \lambda_{\text{phys}}\mathcal{L}_{\text{phys}} \tag{3}$$

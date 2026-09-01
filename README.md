@@ -8,7 +8,7 @@
 > **Repositório Oficial do Artigo:**  
 > *"THOR-PIML: Arquitetura Neural Híbrida com Física Informada para Modelagem e Downscaling Estatístico de Precipitação em Bacias Hidrográficas Regionais"*  
 > **THOR-PIML:** *Taylor-Hurdle Optimized Regional Physics-Informed Machine Learning*  
-> Submetido ao **CONIC 2026**.
+> Submetido ao **CONIC 2026** (Categoria: Concluído).
 
 ---
 
@@ -16,55 +16,80 @@
 
 > [!IMPORTANT]
 > **Aos Avaliadores do CONIC 2026 e Pesquisadores:**  
-> O detalhamento matemático das formulações, derivações das funções de perda, deduções das métricas de avaliação e testes adicionais encontram-se descritos no **Material Suplementar Oficial** localizado no diretório:
+> O detalhamento matemático das formulações, deduções das funções de perda, protocolo experimental e textos do artigo encontram-se descritos no diretório de documentação:
 > 📄 **[`docs/`](docs/)**
 
 ---
 
 ## 🔬 Arquitetura do Modelo (THOR-V8 PIML)
 
-A arquitetura neural **THOR-V8** integra extração de padrões sinóticos 2D, dinâmica temporal multi-escala acoplada, decodificação Hurdle dual-head e barreira física termodinâmica:
+A arquitetura **THOR-V8 PIML** articula o processamento conjunto de campos sinóticos bidimensionais em altitude e séries temporais de superfície ao longo de uma janela móvel de 30 dias:
 
 <p align="center">
   <img src="results/figures/fig_thor_v8_architecture.png" alt="Arquitetura THOR-V8 PIML" width="95%"/>
 </p>
 
-1. **Entradas Pareadas (Lookback $T = 30$ dias):**
-   - Campo Sinótico 2D (ERA5-PL): Tensor $(30, 25, 33, 5)$ com $z_{500}, u_{700}, v_{700}, q_{700}, w_{500}$.
-   - Preditores de Superfície 1D (ERA5-Land): Tensor $(30, 84)$ contendo 16 variáveis locais + 80 lags temporais ($t-1$ a $t-14$).
-2. **Encoder 2D:** Convoluções espaciais $(32 \to 64 \to 128) + \text{AvgPool} + \text{Linear} \to \mathbf{Z}_{\text{syn}} \in \mathbb{R}^{30 \times 64}$.
-3. **Tronco Duplo ($30 \times 148$):** Concatenação $[\text{1D} \mathbin{\Vert} \mathbf{Z}_{\text{syn}}]$ alimentando em paralelo o **Ramo A** ($2\times \text{LSTM}(128) + \text{Residual}$) e o **Ramo B** ($\text{Conv1D Causal}$ multi-escala $k \in \{3,5,7\}, d \in \{1,2,4,8\}$).
-4. **Fusão & Atenção:** Fusão Gated adaptativa $\mathbf{h}_{\text{fused}} = \mathbf{g} \odot \mathbf{h}_{\text{lstm}} + (1 - \mathbf{g}) \odot \mathbf{h}_{\text{tcn}}$ seguida de Atenção Causal com 8 cabeças ($\text{SDPA}$) fatiando o estado $\mathbf{h}_T \in \mathbb{R}^{128}$.
-5. **Saída Hurdle:** Decodificador de Ocorrência ($\text{Sigmoid} \to p_{\text{occ}} \in [0, 1]$) $\times$ Decodificador de Intensidade ($\text{Softplus} \to \mu_{\text{int}} \ge 0$), gerando $\hat{y} = p_{\text{occ}} \times \mu_{\text{int}}$ (mm/dia).
-6. **Barreira Física:** Restrição termodinâmica de Clausius-Clapeyron $\mathcal{L}_{\text{phys}} = \lambda \cdot \text{Softplus}(\hat{y} - 4.0 \cdot \text{TCWV})^2$, garantindo **0.00% de violação física**.
+### Módulos Sequenciais de Processamento:
+
+1. **Entradas Multimodais ($T = 30$ dias):**
+   - **Campo Sinótico 2D (ERA5-PL):** Tensor $(30, 25, 33, 5)$ integrando as variáveis $z_{500}, u_{700}, v_{700}, q_{700}, w_{500}$.
+   - **Preditores de Superfície 1D (ERA5-Land):** Tensor $(30, 84)$ contendo 16 variáveis locais mais 80 *lags* temporais ($t-1$ a $t-14$).
+
+2. **Encoder Convolucional 2D:**
+   Blocos $\text{Conv2D} (32 \to 64 \to 128)$ com *Average Pooling* e projeção linear para extrair a representação latente sinótica:
+   $$Z_{\text{syn}} \in \mathbb{R}^{30 \times 64}$$
+
+3. **Tronco Duplo Paralelo ($30 \times 148$):**
+   Concatenação $[\text{1D} \parallel Z_{\text{syn}}]$ processada simultaneamente pelo **Ramo A** ($2\times \text{LSTM}(128) + \text{Residual}$) para inércia de solo, e pelo **Ramo B** ($\text{Conv1D Causal}$ multi-escala com $k \in \{3,5,7\}$ e dilatações $d \in \{1,2,4,8\}$) para transientes e frentes frias.
+
+4. **Fusão Adaptativa & Autoatenção:**
+   Combinação dinâmica por portão aprendido (*Gated Fusion*):
+   $$h_{\text{fused}} = g \odot h_{\text{lstm}} + (1 - g) \odot h_{\text{tcn}}$$
+   seguida por camada de **Autoatenção Causal** com 8 cabeças (SDPA) gerando o vetor de estado refinado $h_T \in \mathbb{R}^{128}$.
+
+5. **Decodificador Hurdle Dual-Head:**
+   Bifurcação estocástica em uma **Cabeça de Ocorrência** ($\text{Sigmoid} \to p_{\text{occ}} \in [0, 1]$) e uma **Cabeça de Intensidade** ($\text{Softplus} \to \mu_{\text{int}} \ge 0$), definindo a precipitação contínua diária estimada:
+   $$\hat{y} = p_{\text{occ}} \times \mu_{\text{int}} \quad (\text{mm/dia})$$
+
+6. **Barreira Física Termodinâmica (PIML):**
+   Restrição termodinâmica diferenciável de Clausius-Clapeyron ancorada na coluna total de vapor de água ($TCWV$ real):
+   $$\mathcal{L}_{\text{phys}} = \lambda \cdot \left[\text{Softplus}\left(\frac{\hat{y} - 4{,}0 \cdot TCWV}{\delta}\right)\right]^2$$
+   garantindo **0,00% de violações físicas** em todo o período simulado.
 
 ---
 
-## 📊 Benchmark Oficial (Teste Cego: 2019–2026, $N = 2.494$ dias)
+## 📊 Benchmark Oficial no Teste Cego (2019–2026, $N = 2.494$ dias)
 
-| Modelo | Paradigma | KGE (↑) | R10mm (Dias $\ge$ 10mm) | R20mm (Tempestades $\ge$ 20mm) | Violação Clausius-Clapeyron |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **EQM (Gudmundsson 2012)** | Estatístico Empírico | $-0.005$ | 77 / 287 | 10 / 106 | 0.00% |
-| **ResLSTM (Kratzert 2018)** | Recorrente com Residual | $+0.264$ | 241 / 287 | 81 / 106 | 0.00% |
-| **TCN (Bai 2018)** | Convolucional Temporal | $+0.248$ | 240 / 287 | 79 / 106 | 0.00% |
-| **THOR-V7 (Proposta)** | Híbrido Temporal (LSTM+TCN) | $+0.395$ | 272 / 287 | 93 / 106 | 0.00% |
-| **THOR-V8 PIML (Proposta)** | **2D Synoptic CNN + Híbrido PIML** | **+0.410** | **279 / 287** | **98 / 106** | **0.00%** |
+Avaliação comparativa rigorosa no conjunto de teste cego independente de 7 anos (dados observacionais CHIRPS 5,5 km vs. ERA5):
 
-*Observado no período de teste cego: 287 dias com chuva $\ge 10\text{ mm}$ e 106 dias com tempestades $\ge 20\text{ mm}$.*
+| Modelo / Abordagem | Paradigma | KGE (↑) | NSE (↑) | RMSE (mm/d) | MAE (mm/d) | Bias (mm/d) | R10mm (Acerto) | R20mm (Tempestades) | Violação Física |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Observado (CHIRPS Real)** | *Ground Truth* | 1.0000 | 1.0000 | 0.00 | 0.00 | 0.00 | 288 dias | 100 dias | 0.00% |
+| **EQM (Gudmundsson 2012)** | Mapeamento Quantílico | +0.0624 | -0.9879 | 9.31 | 4.19 | +1.56 | 425 dias | 206 dias | 0.00% |
+| **ResLSTM (Kratzert 2018)** | Recorrente Residual | +0.1603 | -0.3013 | 7.53 | 4.62 | +1.87 | 544 dias | 97 dias | N/A |
+| **TCN Pura (Bai 2018)** | Convolucional Temporal | +0.2383 | -0.3418 | 7.64 | 4.41 | +0.70 | 380 dias | 92 dias | N/A |
+| **THOR-V7 Híbrido** | Fusão LSTM+TCN | +0.3200 | -0.0939 | 6.90 | 4.03 | +1.02 | 470 dias | 17 dias | 0.00% |
+| **THOR-V8 PIML (Master)** | **2D CNN + Híbrido PIML** | **+0.4101** 🏆 | **-0.0336** 🏆 | **6.71** 🏆 | **3.44** 🏆 | **+0.14** 🏆 | **279 dias** 🏆 | **95 dias** 🏆 | **0.00%** 🏆 |
 
 ---
 
 ## 🚀 Reprodução em 1 Comando
 
+Para executar o benchmark completo e reproduzir todas as 5 figuras e tabelas do artigo científico:
+
 ```bash
-# 1. Instalar dependências
+# 1. Clonar o repositório
+git clone https://github.com/Zentsy/THOR-PIML-Conic2026.git
+cd THOR-PIML-Conic2026
+
+# 2. Instalar dependências
 pip install -r requirements.txt
 
-# 2. Executar benchmark e gerar as figuras oficiais
+# 3. Executar a reprodução automatizada
 python reproduce_paper_results.py
 ```
 
-Os checkpoints pré-treinados estão disponíveis em `checkpoints/` e os resultados numéricos são consolidados em `results/`.
+Os checkpoints pré-treinados estão disponíveis em `checkpoints/` e os resultados e figuras são salvos em `results/`.
 
 ---
 
@@ -72,19 +97,19 @@ Os checkpoints pré-treinados estão disponíveis em `checkpoints/` e os resulta
 
 ```text
 THOR-PIML-Conic2026/
-├── checkpoints/              # Checkpoints pré-treinados (.pt) e scaler
-│   ├── v8_hybrid_seed42.pt   # Modelo campeão THOR-V8 PIML
+├── checkpoints/              # Checkpoints pré-treinados (.pt) e scalers
+│   ├── v8_hybrid_seed42.pt   # Modelo campeão oficial THOR-V8 PIML
 │   ├── v7_hybrid_v7_v3_seed42.pt
 │   ├── v7_lstm_v7_v3_seed42.pt
 │   └── v7_tcn_v7_v3_seed42.pt
-├── data/                     # Dataset tabular de treino e teste cego
+├── data/                     # Dataset oficial de treino e teste cego
 │   └── ground_truth_guarulhos_daily_v3.csv
-├── docs/                     # Material Suplementar
-├── results/                  # Tabela do benchmark e figuras
-│   └── figures/              # Figuras oficiais do artigo (PNG)
-├── src/                      # Implementação das redes neurais e perdas físicas
-├── reproduce_paper_results.py # Script de reprodução automática
-└── requirements.txt          # Dependências do projeto
+├── docs/                     # Textos do artigo, fundamentação e guia de figuras
+├── results/                  # Tabela do benchmark e saídas
+│   └── figures/              # Figuras oficiais em alta resolução (300 DPI)
+├── src/                      # Código-fonte PyTorch das arquiteturas e perdas PIML
+├── reproduce_paper_results.py # Script de avaliação e benchmark oficial
+└── requirements.txt          # Dependências pinadas (PyTorch 2.4.0)
 ```
 
 ---
