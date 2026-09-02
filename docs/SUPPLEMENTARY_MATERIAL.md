@@ -8,7 +8,7 @@
 ---
 
 ## Sumário
-1. [Formulação Matemática Rigorosa da Arquitetura Neural (THOR-V8)](#1-formulação-matemática-rigorosa-da-arquitetura-neural-thor-v8)
+1. [Formulação Matemática da Arquitetura Neural (THOR-V8)](#1-formulação-matemática-da-arquitetura-neural-thor-v8)
 2. [Função de Perda e Barreira Termodinâmica de Clausius-Clapeyron](#2-função-de-perda-e-barreira-termodinâmica-de-clausius-clapeyron)
 3. [As Quatro Arenas Quantitativas de Avaliação](#3-as-quatro-arenas-quantitativas-de-avaliação)
 4. [Análise Aprofundada das Figuras Oficiais do Artigo](#4-análise-aprofundada-das-figuras-oficiais-do-artigo)
@@ -17,7 +17,7 @@
 
 ---
 
-## 1. Formulação Matemática Rigorosa da Arquitetura Neural (THOR-V8)
+## 1. Formulação Matemática da Arquitetura Neural (THOR-V8)
 
 A arquitetura neural do **THOR-V8** é formulada para resolver conjuntamente a dependência espacial sinótica de grande escala e a memória hidrológica local com restrição física termodinâmica estrita.
 
@@ -25,30 +25,30 @@ A arquitetura neural do **THOR-V8** é formulada para resolver conjuntamente a d
   <img src="../results/figures/fig_thor_v8_architecture.png" alt="Arquitetura THOR-V8 PIML" width="95%"/>
 </p>
 
-### 1.1. Tensores de Entrada e Lookback Temporal ($T = 30\text{ dias}$)
+### 1.1. Tensores de Entrada e Lookback Temporal (T = 30 dias)
 
-O modelo recebe para cada amostra temporal no instante $t$ dois tensores pareados cobrindo uma janela causal antecedente de $T = 30\text{ dias}$:
+O modelo recebe para cada amostra temporal no instante $t$ dois tensores pareados cobrindo uma janela causal antecedente de $T = 30$ dias:
 
 1. **Tensor Sinótico Espacial 2D ($\mathbf{X}_{\text{syn}} \in \mathbb{R}^{B \times T \times H \times W \times C}$):**
    * Malha de reanálise ERA5 ($0.25^\circ \times 0.25^\circ$, correspondendo a uma caixa de $6^\circ \times 8^\circ$ sobre a América do Sul / Bacia de Santos / Serra do Mar).
-   * Dimensões: $H = 25\text{ latitudes}$, $W = 33\text{ longitudes}$ e $C = 5\text{ variáveis isobáricas essenciais}$:
+   * Dimensões: $H = 25$ latitudes, $W = 33$ longitudes e $C = 5$ variáveis isobáricas essenciais:
 
 $$
 \mathbf{X}_{\text{syn}}[t] = [z_{500}, u_{700}, v_{700}, q_{700}, w_{500}]
 $$
 
-   onde $z_{500}$ é a altura geopotencial a 500 hPa (cavados/bloqueios), $u_{700}$ e $v_{700}$ são os ventos zonal e meridional a 700 hPa (jatos em baixos níveis e ZCAS), $q_{700}$ é a umidade específica a 700 hPa (advecção de vapor), e $w_{500}$ é a velocidade vertical a 500 hPa (convecção profunda e subida do ar).
+   onde $z_{500}$ é a altura geopotencial a 500 hPa (cavados e bloqueios), $u_{700}$ e $v_{700}$ são os ventos zonal e meridional a 700 hPa (jatos em baixos níveis e ZCAS), $q_{700}$ é a umidade específica a 700 hPa (advecção de vapor), e $w_{500}$ é a velocidade vertical a 500 hPa (convecção profunda).
 
 2. **Tensor de Preditores de Superfície 1D ($\mathbf{X}_{\text{surf}} \in \mathbb{R}^{B \times T \times F}$ com $F = 84$):**
-   * 16 variáveis primárias locais do ERA5-Land (temperatura $T_{2m}$, ponto de orvalho $D_{2m}$, pressão de superfície $P_{\text{sfc}}$, vento $u_{10m}, v_{10m}$, radiação solar $R_{\text{sfc}}$, água precipitável $\text{TCWV}$ e energia convectiva disponível $\text{CAPE}$);
-   * 80 multi-lags temporais antecedentes nos horizontes $t-1, t-2, t-3, t-7, t-14\text{ dias}$;
+   * 16 variáveis primárias locais do ERA5-Land (temperatura $T_{2m}$, ponto de orvalho $D_{2m}$, pressão de superfície $P_{\text{sfc}}$, vento $u_{10m}, v_{10m}$, radiação solar $R_{\text{sfc}}$, água precipitável TCWV e energia convectiva CAPE);
+   * 80 multi-lags temporais antecedentes nos horizontes $t-1, t-2, t-3, t-7, t-14$ dias;
    * 4 variáveis de contexto regional (médias e desvios espaciais do domínio).
 
 ---
 
-### 1.2. Encoder Sinótico Espacial 2D (`SpatialSynopticEncoder`)
+### 1.2. Encoder Sinótico Espacial 2D (SpatialSynopticEncoder)
 
-Cada campo sinótico diário $\mathbf{X}_{\text{syn}}[t] \in \mathbb{R}^{5 \times 25 \times 33}$ é processado por uma rede convolucional profunda que extrai padrões de vorticidade e frentes frias sem colapsar a causalidade temporal:
+Cada campo sinótico diário $\mathbf{X}_{\text{syn}}[t] \in \mathbb{R}^{5 \times 25 \times 33}$ é processado por uma rede convolucional profunda que extrai padrões de vorticidade e frentes frias:
 
 $$
 \begin{aligned}
@@ -61,7 +61,7 @@ $$
 \end{aligned}
 $$
 
-A sequência de representações sinóticas diárias é concatenada com os preditores de superfície ao longo do eixo temporal:
+A sequência de representações sinóticas diárias é concatenada com os preditores de superfície:
 
 $$
 \mathbf{X}_{\text{trunk}} = [\mathbf{X}_{\text{surf}} \parallel \mathbf{Z}_{\text{syn}}] \in \mathbb{R}^{B \times 30 \times (84 + 64)} = \mathbb{R}^{B \times 30 \times 148}
@@ -69,7 +69,7 @@ $$
 
 ---
 
-### 1.3. Tronco Híbrido Temporal Duplo (ResLSTM $\parallel$ Multi-Scale TCN)
+### 1.3. Tronco Híbrido Temporal Duplo (ResLSTM e Multi-Scale TCN)
 
 O tensor fundido $\mathbf{X}_{\text{trunk}}$ alimenta paralelamente dois ramos temporais especializados:
 
@@ -86,13 +86,13 @@ $$
 
 #### Ramo B: Multi-Scale TCN Convolucional Causal (Gatilhos Frontais Rápidos)
 
-Composto por $L = 4$ blocos convolucionais causais com dilações crescentes $d \in \{1, 2, 4, 8\}$ e múltiplos kernels $k \in \{3, 5, 7\}$ em paralelo para detectar desde rajadas convectivas de 1 dia até ondas baroclínicas de 8 dias:
+Composto por 4 blocos convolucionais causais com dilações crescentes $d \in \{1, 2, 4, 8\}$ e múltiplos kernels $k \in \{3, 5, 7\}$ em paralelo:
 
 $$
-\mathbf{h}_{\text{tcn}}^{(l)} = \text{LayerNorm}\left(\mathbf{h}^{(l-1)} + \text{GELU}\left(\mathbf{W}_{\text{fuse}} \left[ \text{CausalConv1D}_{k=3, d=2^l}(\mathbf{h}^{(l-1)}) \parallel \text{CausalConv1D}_{k=5, d=2^l}(\mathbf{h}^{(l-1)}) \parallel \text{CausalConv1D}_{k=7, d=2^l}(\mathbf{h}^{(l-1)}) \right]\right)\right)
+\mathbf{h}_{\text{tcn}}^{(l)} = \text{LayerNorm}\left(\mathbf{h}^{(l-1)} + \text{GELU}\left(\mathbf{W}_{\text{fuse}} \left[ \text{Conv1D}_{k=3, d=2^l}(\mathbf{h}^{(l-1)}) \parallel \text{Conv1D}_{k=5, d=2^l}(\mathbf{h}^{(l-1)}) \parallel \text{Conv1D}_{k=7, d=2^l}(\mathbf{h}^{(l-1)}) \right]\right)\right)
 $$
 
-Esta formulação resulta em $\mathbf{h}_{\text{tcn}} \in \mathbb{R}^{B \times 30 \times 128}$ com campo receptivo total de $31\text{ dias}$ e **zero vazamento do futuro**.
+Esta formulação resulta em $\mathbf{h}_{\text{tcn}} \in \mathbb{R}^{B \times 30 \times 128}$ com campo receptivo total de 31 dias e **zero vazamento do futuro**.
 
 ---
 
@@ -107,7 +107,7 @@ $$
 \end{aligned}
 $$
 
-A sequência fundida $\mathbf{H}_{\text{fused}} \in \mathbb{R}^{B \times 30 \times 128}$ é processada por um módulo de Autoatenção Causal com 8 cabeças ($\text{SDPA}$):
+A sequência fundida $\mathbf{H}_{\text{fused}} \in \mathbb{R}^{B \times 30 \times 128}$ é processada por um módulo de Autoatenção Causal com 8 cabeças (SDPA):
 
 $$
 \text{Attention}(\mathbf{Q}, \mathbf{K}, \mathbf{V}) = \text{softmax}\left(\frac{\mathbf{Q}\mathbf{K}^T}{\sqrt{d_k}} + \mathbf{M}_{\text{causal}}\right)\mathbf{V}
@@ -123,7 +123,7 @@ $$
 
 ---
 
-### 1.5. Decodificador Hurdle Dual-Head (Ocorrência $\times$ Intensidade)
+### 1.5. Decodificador Hurdle Dual-Head (Ocorrência × Intensidade)
 
 Para superar a inflação de zeros da precipitação diária e o viés de garoa artificial, a previsão final é decomposta em duas cabeças neurais não-lineares especializadas:
 
@@ -133,7 +133,7 @@ $$
 p_{\text{occ}} = \sigma\left(\mathbf{W}_{o2} \cdot \text{SiLU}\left(\text{LayerNorm}(\mathbf{W}_{o1}\mathbf{h}_T + \mathbf{b}_{o1})\right) + b_{o2}\right) \in [0, 1]
 $$
 
-2. **Head de Intensidade ($\mu_{\text{int}}$):** Regressor contínuo positivo estrito para o montante de precipitação:
+2. **Head de Intensidade ($\mu_{\text{int}}$):** Regressor contínuo positivo estrito para o volume de precipitação:
 
 $$
 \mu_{\text{int}} = \text{Softplus}\left(\mathbf{W}_{i2} \cdot \text{SiLU}\left(\text{LayerNorm}(\mathbf{W}_{i1}\mathbf{h}_T + \mathbf{b}_{i1})\right) + b_{i2}\right) \ge 0\text{ mm/dia}
@@ -159,7 +159,7 @@ $$
 2. **Perda de Intensidade de Chuva ($\mathcal{L}_{\text{reg}}$):** Huber Loss log-transformada aplicada exclusivamente aos dias com chuva observada ($y \ge 1.0\text{ mm}$).
 3. **Perda de Rechamada de Extremos ($\mathcal{L}_{\text{extremes}}$):** Penalidade ponderada por quantis para eventos severos ($y \ge 20.0\text{ mm}$).
 4. **Barreira Física de Clausius-Clapeyron ($\mathcal{L}_{\text{phys}}$):**  
-   A precipitação convectiva local máxima em 24h não pode exceder a água precipitável total disponível na coluna atmosférica ($\text{TCWV}$) multiplicada pelo fator de reciclagem e convergência de umidade $k = 4.0$:
+   A precipitação convectiva local máxima em 24h não pode exceder a água precipitável total disponível na coluna atmosférica (TCWV) multiplicada pelo fator de reciclagem e convergência de umidade $k = 4.0$:
 
 $$
 W_{\max} = 4.0 \times \text{TCWV}_{\text{real}}\text{ (mm)}
@@ -190,7 +190,7 @@ A validação do modelo foi estruturada em 4 arenas complementares para evitar q
 
 ### Arena 1: Precisão Hidrológica Geral
 
-* **Kling-Gupta Efficiency (KGE):** Métrica padrão-ouro em hidrologia que decompõe a correlação ($r$), a variabilidade relativa ($\alpha = \sigma_{\text{sim}} / \sigma_{\text{obs}}$) e o viés de volume ($\beta = \mu_{\text{sim}} / \mu_{\text{obs}}$):
+* **Kling-Gupta Efficiency (KGE):** Métrica padrão-ouro em hidrologia que decompõe a correlação linear ($r$), a variabilidade relativa ($\alpha = \sigma_{\text{sim}} / \sigma_{\text{obs}}$) e o viés de volume ($\beta = \mu_{\text{sim}} / \mu_{\text{obs}}$):
 
 $$
 \text{KGE} = 1 - \sqrt{(r - 1)^2 + (\alpha - 1)^2 + (\beta - 1)^2} \in (-\infty, 1]
@@ -202,20 +202,20 @@ $$
 \text{NSE} = 1 - \frac{\sum_{t=1}^N (y_t - \hat{y}_t)^2}{\sum_{t=1}^N (y_t - \bar{y})^2}
 $$
 
-* **RMSE e MAE:** Erro médio absoluto e quadrático em $\text{mm/dia}$.
+* **RMSE e MAE:** Erro médio absoluto e quadrático em mm/dia.
 
 ---
 
 ### Arena 2: Preservação de Extremos Climáticos (WMO / ETCCDI)
 
-* **$R10\text{mm}$ e $R20\text{mm}$:** Contagem de dias com precipitação diária $\ge 10\text{ mm}$ (chuva forte) e $\ge 20\text{ mm}$ (tempestade severa com risco de inundação na bacia).
-* **Quantile Bias nos Percentis 95 e 99 ($\text{QB}_{95}$ e $\text{QB}_{99}$):**
+* **R10mm e R20mm:** Contagem de dias com precipitação diária $\ge 10\text{ mm}$ (chuva forte) e $\ge 20\text{ mm}$ (tempestade severa com risco de inundação na bacia).
+* **Quantile Bias nos Percentis 95 e 99 (QB95 e QB99):**
 
 $$
-\text{QB}_p = \frac{\hat{Q}_p - Q_p}{Q_p} \times 100\text{ (\%)} \quad \text{onde } Q_p = \text{Percentil}_p(y)
+\text{QB}_p = \frac{\hat{Q}_p - Q_p}{Q_p} \times 100\% \quad \text{onde } Q_p = \text{Percentil}_p(y)
 $$
 
-* **Índice de Intensidade Diária Simples ($\text{SDII}$):** Intensidade média nos dias úmidos ($y \ge 1.0\text{ mm}$).
+* **Índice de Intensidade Diária Simples (SDII):** Intensidade média nos dias úmidos ($y \ge 1.0\text{ mm}$).
 
 ---
 
@@ -228,7 +228,7 @@ $$
 $$
 
 * **F1-Score de Classificação:** Média harmônica entre Precisão e Rechamada para dias chuvosos ($y \ge 1.0\text{ mm}$).
-* **Máximo de Dias Úmidos Consecutivos (CWD):** Detecta se o modelo sofre do artefato de "chover garoa infinita" de $0.2\text{ mm}$ todos os dias.
+* **Máximo de Dias Úmidos Consecutivos (CWD):** Detecta se o modelo sofre do artefato de prever chuvas contínuas de 0.2 mm todos os dias.
 
 ---
 
@@ -237,7 +237,7 @@ $$
 * **Taxa de Violação Física:** Percentual de dias no conjunto de teste onde a precipitação prevista violou o teto termodinâmico de água precipitável:
 
 $$
-\text{Taxa de Violação} = \frac{1}{N} \sum_{t=1}^N \mathbb{I}\left(\hat{y}_t > 4.0 \cdot \text{TCWV}_t\right) \times 100\text{ (\%)} \quad \text{[Meta Rigorosa: } 0.00\%\text{]}
+\text{Taxa de Violação} = \frac{1}{N} \sum_{t=1}^N \mathbb{I}\left(\hat{y}_t > 4.0 \cdot \text{TCWV}_t\right) \times 100\% \quad \text{[Meta Rigorosa: 0.00%]}
 $$
 
 ---
@@ -254,11 +254,11 @@ Todas as 6 figuras geradas pelo pipeline canônico encontram-se em alta resoluç
   <img src="../results/figures/fig1_benchmark_table_docx.png" alt="Figura 1 - Tabela Oficial do Benchmark" width="95%"/>
 </p>
 
-* **O que representa:** O quadro comparativo consolidado avaliando os 5 modelos no teste cego independente de 7 anos ($2019\text{–}2026$, $N = 2.494\text{ dias}$).
+* **O que representa:** O quadro comparativo consolidado avaliando os 5 modelos no teste cego independente de 7 anos (2019 a 2026, $N = 2.494$ dias).
 * **Análise dos Resultados:**
-  * O método estatístico clássico **EQM (Gudmundsson 2012)** falha completamente na escala diária ($\text{KGE} = -0.005$, detectando apenas 10 das 106 tempestades de $R20\text{mm}$).
+  * O método estatístico clássico **EQM (Gudmundsson 2012)** falha na escala diária ($\text{KGE} = -0.005$, detectando apenas 10 das 106 tempestades de R20mm).
   * Modelos de deep learning isolados (**ResLSTM** e **TCN**) atingem $\text{KGE} \approx +0.25\text{ a }+0.26$, capturando cerca de 80 tempestades, mas sofrendo com subestimação de picos.
-  * O **THOR-V7 Híbrido** salta para $\text{KGE} = +0.395$ e o **THOR-V8 PIML Espacial** estabelece o recorde absoluto com **$\text{KGE} = +0.410$**, capturando **279 de 287 dias de $R10\text{mm}$** e **98 de 106 tempestades de $R20\text{mm}$** com **0.00% de violação termodinâmica**.
+  * O **THOR-V7 Híbrido** salta para $\text{KGE} = +0.395$ e o **THOR-V8 PIML Espacial** estabelece o recorde absoluto com **$\text{KGE} = +0.410$**, capturando **279 de 287 dias de R10mm** e **98 de 106 tempestades de R20mm** com **0.00% de violação termodinâmica**.
 
 ---
 
@@ -268,10 +268,10 @@ Todas as 6 figuras geradas pelo pipeline canônico encontram-se em alta resoluç
   <img src="../results/figures/fig2_seasonal_climatology_narrative.png" alt="Figura 2 - Ciclo Sazonal DJF vs JJA" width="95%"/>
 </p>
 
-* **O que representa:** O balanço hídrico sazonal entre o período chuvoso de Verão (**DJF** — Dezembro, Janeiro e Fevereiro) e o período seco de Inverno (**JJA** — Junho, Julho e Agosto).
+* **O que representa:** O balanço hídrico sazonal entre o período chuvoso de Verão (DJF — Dezembro, Janeiro e Fevereiro) e o período seco de Inverno (JJA — Junho, Julho e Agosto).
 * **Análise dos Resultados:**
-  * O EQM e os modelos recorrentes simples subestimam o volume acumulado de verão em até $35\%$.
-  * O THOR-V8 replica com precisão a amplitude do ciclo monçônico sul-americano, preservando o volume total de cheias do verão ($\Delta \text{Volume} < 3\%$) sem superestimar as chuvas durante a estiagem de inverno.
+  * O EQM e os modelos recorrentes simples subestimam o volume acumulado de verão em até 35%.
+  * O THOR-V8 replica com precisão a amplitude do ciclo monçônico sul-americano, preservando o volume total de cheias do verão com erro de volume inferior a 3%, sem superestimar as chuvas durante a estiagem de inverno.
 
 ---
 
@@ -281,10 +281,10 @@ Todas as 6 figuras geradas pelo pipeline canônico encontram-se em alta resoluç
   <img src="../results/figures/fig3_extremes_duration_curves.png" alt="Figura 3 - Curvas de Permanência e Quantis Extremos" width="95%"/>
 </p>
 
-* **O que representa:** A curva de duração de precipitação (*Flow/Rainfall Duration Curve*) plotada em escala semilogarítmica para os percentis da cauda pesada ($Q_{90}, Q_{95}, Q_{99}, Q_{99.9}$).
+* **O que representa:** A curva de duração de precipitação (Flow/Rainfall Duration Curve) plotada em escala semilogarítmica para os percentis da cauda pesada ($Q_{90}, Q_{95}, Q_{99}, Q_{99.9}$).
 * **Análise dos Resultados:**
-  * Modelos treinados com MSE tradicional colapsam após o percentil 95% (achatamento da cauda), não conseguindo gerar eventos acima de $30\text{ mm/dia}$.
-  * O THOR-V8 acompanha perfeitamente a curva observada (CHIRPS/Estação) até o percentil $99.9\%$ ($> 80\text{ mm/dia}$), provando a eficácia do decodificador Hurdle e da função de perda com ponderação de cauda.
+  * Modelos treinados com MSE tradicional colapsam após o percentil 95% (achatamento da cauda), não conseguindo gerar eventos acima de 30 mm/dia.
+  * O THOR-V8 acompanha perfeitamente a curva observada (CHIRPS/Estação) até o percentil 99.9% ($> 80\text{ mm/dia}$), provando a eficácia do decodificador Hurdle e da função de perda com ponderação de cauda.
 
 ---
 
@@ -294,9 +294,9 @@ Todas as 6 figuras geradas pelo pipeline canônico encontram-se em alta resoluç
   <img src="../results/figures/fig4_taylor_diagram.png" alt="Figura 4 - Diagrama de Taylor" width="90%"/>
 </p>
 
-* **O que representa:** A síntese geométrica tridimensional da qualidade estatística: coeficiente de correlação de Pearson ($r$), desvio padrão normalizado ($\sigma_{\text{sim}} / \sigma_{\text{obs}}$) e erro quadrático médio centrado ($\text{E}'$).
+* **O que representa:** A síntese geométrica tridimensional da qualidade estatística: coeficiente de correlação de Pearson ($r$), desvio padrão normalizado ($\sigma_{\text{sim}} / \sigma_{\text{obs}}$) e erro quadrático médio centrado.
 * **Análise dos Resultados:**
-  * O ponto representativo do THOR-V8 é o mais próximo do ponto de referência observado ($\text{REF} = (1.0, 1.0)$), apresentando a maior correlação linear e a razão de variabilidade mais próxima da unidade ($\alpha \approx 1.01$).
+  * O ponto representativo do THOR-V8 é o mais próximo do ponto de referência ideal (REF = 1.0, 1.0), apresentando a maior correlação linear e a razão de variabilidade mais próxima da unidade ($\alpha \approx 1.01$).
 
 ---
 
@@ -306,10 +306,10 @@ Todas as 6 figuras geradas pelo pipeline canônico encontram-se em alta resoluç
   <img src="../results/figures/fig5_convective_density_scatter.png" alt="Figura 5 - Densidade Hexbin 1:1" width="90%"/>
 </p>
 
-* **O que representa:** O gráfico de dispersão com densidade de contorno em colmeia (*hexbin density*) entre a precipitação observada e a prevista pelo THOR-V8.
+* **O que representa:** O gráfico de dispersão com densidade de contorno em colmeia (hexbin density) entre a precipitação observada e a prevista pelo THOR-V8.
 * **Análise dos Resultados:**
   * A linha de regressão do modelo se alinha com a diagonal 1:1 ideal;
-  * Observa-se a ausência de dispersão artificial na faixa de $0\text{ a }1\text{ mm}$ (eliminação do viés de garoa) e uma distribuição contínua e calibrada nos eventos convectivos severos ($20\text{ a }100\text{ mm/dia}$).
+  * Observa-se a ausência de dispersão artificial na faixa de 0 a 1 mm (eliminação do viés de garoa) e uma distribuição contínua e calibrada nos eventos convectivos severos (20 a 100 mm/dia).
 
 ---
 
@@ -318,13 +318,13 @@ Todas as 6 figuras geradas pelo pipeline canônico encontram-se em alta resoluç
 O pipeline de dados e pré-processamento obedece a 3 invariantes científicas estritas para garantir que os resultados do benchmark sejam blindados contra qualquer contaminação:
 
 1. **Ajuste Estrito do Scaler no Treino:**
-   * O `RobustClimateScaler` (baseado em mediana e intervalo interquartil $\text{IQR}$) é ajustado **exclusivamente no conjunto de treino** ($1981\text{ a }2014$).
-   * Os conjuntos de validação ($2014\text{ a }2019$) e teste cego ($2019\text{ a }2026$) são apenas transformados com os parâmetros congelados do treino.
+   * O `RobustClimateScaler` (baseado em mediana e intervalo interquartil IQR) é ajustado **exclusivamente no conjunto de treino** (1981 a 2014).
+   * Os conjuntos de validação (2014 a 2019) e teste cego (2019 a 2026) são apenas transformados com os parâmetros congelados do treino.
 2. **Proibição de Normalizações Globais ou por Ano:**
    * É estritamente proibida qualquer normalização `year_norm` ou padronização que utilize a média/desvio do ano corrente, evitando que o dia $t$ tenha acesso indireto ao clima do ano futuro.
 3. **Causalidade Temporal Rigorosa:**
-   * Todas as convoluções são causais ($\text{pad}$ à esquerda e corte à direita);
-   * A atenção utiliza máscara triangular inferior estrita ($\mathbf{M}_{\text{causal}}$);
+   * Todas as convoluções são causais (pad à esquerda e corte à direita);
+   * A atenção utiliza máscara triangular inferior estrita;
    * O modelo nunca utiliza LSTMs bidirecionais sobre o eixo temporal de previsão.
 
 ---

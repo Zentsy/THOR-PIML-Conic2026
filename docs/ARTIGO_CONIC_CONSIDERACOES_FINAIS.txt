@@ -1,5 +1,0 @@
-7. Considerações Finais
-
-O estudo validou a arquitetura neural híbrida THOR-PIML no downscaling diário de precipitação em Guarulhos/SP. Os testes independentes (2019–2026) confirmaram as hipóteses: o decodificador Hurdle com perda assimétrica eliminou o viés de garoa, capturando 95% dos eventos severos (R20mm), enquanto a barreira termodinâmica de Clausius-Clapeyron garantiu 0% de violações físicas, superando os métodos canônicos com KGE de +0,4101 e RMSE de 6,71 mm/dia.
-
-A versão espaço-temporal (THOR-V8) viabiliza a correção de viés de projeções climáticas regionais (CORDEX SAM-22, 2026–2100), fornecendo subsídios quantitativos cruciais para a mitigação de desastres e o planejamento urbano municipal. Como trabalhos futuros, propõe-se acoplar módulos de teleconexões oceano-atmosfera (anomalias de TSM e ENOS), integrar a base CHIRPS v3.0 e incorporar os pluviômetros municipais ao modelo.
