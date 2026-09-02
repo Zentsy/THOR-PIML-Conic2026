@@ -16,8 +16,8 @@
 
 > [!IMPORTANT]
 > **Aos Avaliadores do CONIC 2026 e Pesquisadores:**  
-> O detalhamento matemático das formulações, deduções das funções de perda, protocolo experimental e textos do artigo encontram-se descritos no diretório de documentação:
-> 📄 **[`docs/`](docs/)**
+> O detalhamento matemático das formulações, deduções das funções de perda, protocolo experimental e análise exaustiva das figuras encontram-se descritos no **Material Suplementar Oficial**:  
+> 📄 **[`docs/SUPPLEMENTARY_MATERIAL.md`](docs/SUPPLEMENTARY_MATERIAL.md)**
 
 ---
 
@@ -37,23 +37,37 @@ A arquitetura **THOR-V8 PIML** articula o processamento conjunto de campos sinó
 
 2. **Encoder Convolucional 2D:**
    Blocos $\text{Conv2D} (32 \to 64 \to 128)$ com *Average Pooling* e projeção linear para extrair a representação latente sinótica:
-   $$Z_{\text{syn}} \in \mathbb{R}^{30 \times 64}$$
+
+$$
+Z_{\text{syn}} \in \mathbb{R}^{30 \times 64}
+$$
 
 3. **Tronco Duplo Paralelo ($30 \times 148$):**
    Concatenação $[\text{1D} \parallel Z_{\text{syn}}]$ processada simultaneamente pelo **Ramo A** ($2\times \text{LSTM}(128) + \text{Residual}$) para inércia de solo, e pelo **Ramo B** ($\text{Conv1D Causal}$ multi-escala com $k \in \{3,5,7\}$ e dilatações $d \in \{1,2,4,8\}$) para transientes e frentes frias.
 
 4. **Fusão Adaptativa & Autoatenção:**
    Combinação dinâmica por portão aprendido (*Gated Fusion*):
-   $$h_{\text{fused}} = g \odot h_{\text{lstm}} + (1 - g) \odot h_{\text{tcn}}$$
+
+$$
+h_{\text{fused}} = g \odot h_{\text{lstm}} + (1 - g) \odot h_{\text{tcn}}
+$$
+
    seguida por camada de **Autoatenção Causal** com 8 cabeças (SDPA) gerando o vetor de estado refinado $h_T \in \mathbb{R}^{128}$.
 
 5. **Decodificador Hurdle Dual-Head:**
    Bifurcação estocástica em uma **Cabeça de Ocorrência** ($\text{Sigmoid} \to p_{\text{occ}} \in [0, 1]$) e uma **Cabeça de Intensidade** ($\text{Softplus} \to \mu_{\text{int}} \ge 0$), definindo a precipitação contínua diária estimada:
-   $$\hat{y} = p_{\text{occ}} \times \mu_{\text{int}} \quad (\text{mm/dia})$$
+
+$$
+\hat{y} = p_{\text{occ}} \times \mu_{\text{int}} \quad (\text{mm/dia})
+$$
 
 6. **Barreira Física Termodinâmica (PIML):**
    Restrição termodinâmica diferenciável de Clausius-Clapeyron ancorada na coluna total de vapor de água ($TCWV$ real):
-   $$\mathcal{L}_{\text{phys}} = \lambda \cdot \left[\text{Softplus}\left(\frac{\hat{y} - 4{,}0 \cdot TCWV}{\delta}\right)\right]^2$$
+
+$$
+\mathcal{L}_{\text{phys}} = \lambda \cdot \left[\text{Softplus}\left(\hat{y} - 4{,}0 \cdot TCWV\right)\right]^2
+$$
+
    garantindo **0,00% de violações físicas** em todo o período simulado.
 
 ---
@@ -104,7 +118,7 @@ THOR-PIML-Conic2026/
 │   └── v7_tcn_v7_v3_seed42.pt
 ├── data/                     # Dataset oficial de treino e teste cego
 │   └── ground_truth_guarulhos_daily_v3.csv
-├── docs/                     # Textos do artigo, fundamentação e guia de figuras
+├── docs/                     # Material Suplementar oficial (SUPPLEMENTARY_MATERIAL.md)
 ├── results/                  # Tabela do benchmark e saídas
 │   └── figures/              # Figuras oficiais em alta resolução (300 DPI)
 ├── src/                      # Código-fonte PyTorch das arquiteturas e perdas PIML
